@@ -88,7 +88,10 @@ class BatchFake extends Batch
             $this->added[] = $job;
         }
 
-        $this->totalJobs += $jobs->count();
+        $count = $jobs->count();
+
+        $this->totalJobs += $count;
+        $this->pendingJobs += $count;
 
         return $this;
     }

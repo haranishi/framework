@@ -9,6 +9,7 @@ use Illuminate\Support\Testing\Fakes\BatchFake;
 use JMac\Testing\Double;
 use JMac\Testing\Integrations\PHPUnit\VerifiesDoubles;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 class BusBatchableTest extends TestCase
 {
@@ -50,6 +51,23 @@ class BusBatchableTest extends TestCase
         $this->assertSame('test-batch-id', $job->batch()->id);
         $this->assertSame('test-batch-name', $job->batch()->name);
         $this->assertSame(3, $job->batch()->totalJobs);
+    }
+
+    public function test_jobs_added_to_a_fake_batch_are_pending()
+    {
+        $job = new class
+        {
+            use Batchable;
+        };
+
+        [, $batch] = $job->withFakeBatch(totalJobs: 4, pendingJobs: 2);
+
+        $batch->add(new stdClass);
+
+        $this->assertSame(5, $batch->totalJobs);
+        $this->assertSame(3, $batch->pendingJobs);
+        $this->assertSame(2, $batch->processedJobs());
+        $this->assertSame(40, $batch->progress());
     }
 
     public function test_batching_reflects_cancelled_state()
