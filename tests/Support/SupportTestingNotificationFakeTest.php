@@ -78,6 +78,34 @@ class SupportTestingNotificationFakeTest extends TestCase
         });
     }
 
+    public function testDoesNotRecordDatabaseOnlyOnDemandNotifications()
+    {
+        $notifiable = new AnonymousNotifiable;
+        $notification = new class extends Notification
+        {
+            public function via($notifiable)
+            {
+                return 'database';
+            }
+        };
+
+        $this->fake->sendNow($notifiable, $notification);
+        $this->fake->sendNow($notifiable, new NotificationStub, ['database']);
+
+        $this->fake->assertNothingSent();
+    }
+
+    public function testOnlyRecordsSupportedOnDemandChannels()
+    {
+        $channels = ['database', 'mail'];
+
+        $this->fake->sendNow(new AnonymousNotifiable, new NotificationStub, $channels);
+        $this->fake->sendNow($this->user, new NotificationStub, $channels);
+
+        $this->fake->assertSentOnDemand(NotificationStub::class, fn ($notification, $channels) => $channels === [1 => 'mail']);
+        $this->fake->assertSentTo($this->user, NotificationStub::class, fn ($notification, $sentChannels) => $sentChannels === $channels);
+    }
+
     public function testAssertSentToWithArrayOfProperties()
     {
         $this->fake->send($this->user, new NotificationWithPropertiesStub('pending'));

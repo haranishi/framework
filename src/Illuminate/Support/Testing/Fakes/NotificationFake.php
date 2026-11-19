@@ -342,6 +342,14 @@ class NotificationFake implements Fake, NotificationDispatcher, NotificationFact
 
             $notifiableChannels = $channels ?: $notification->via($notifiable);
 
+            if ($notifiable instanceof AnonymousNotifiable) {
+                if (is_array($notifiableChannels)) {
+                    $notifiableChannels = array_filter($notifiableChannels, fn ($channel) => $channel !== 'database');
+                } elseif ($notifiableChannels === 'database') {
+                    continue;
+                }
+            }
+
             if (method_exists($notification, 'shouldSend')) {
                 $notifiableChannels = array_filter(
                     $notifiableChannels,
